@@ -40,6 +40,7 @@ void Infect(List *head);
 void BeContagious(List *head);
 void lengthen_recovery(List *head, int day);
 void BeHealthy(List *head);
+void MoveToICU(List *head, int *space, People *ICU, int capacity);
 
 int main()
 {
@@ -50,9 +51,11 @@ int main()
     int come_day;
     int client;
     int read;
+    int space_left;
     List *head;
     List *ptr;
     List *cur;
+    People *ICU;
 
     // set the header of header nodes and information of matrix
     head = new List;
@@ -60,6 +63,8 @@ int main()
     cin >> head->row_num >> head->col_num;
     cin >> ICU_capacity >> time_end;
     cin >> head->people_num;
+    ICU = new People[ICU_capacity];
+    space_left = ICU_capacity;
 
     // set the header nodes
     j = head->row_num > head->col_num ? head->row_num : head->col_num;
@@ -114,6 +119,7 @@ int main()
         // increase the recovery day
         BeHealthy(head);
         lengthen_recovery(head, day);
+        MoveToICU(head, &space_left, ICU, ICU_capacity);
         cout << "day " << day << "result:" << endl;
         Show(head);
     }
@@ -392,6 +398,60 @@ void BeHealthy(List *head)
                     cur->people.state = "Healthy";
                     cur->people.contagious = 0;
                 }
+            } 
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                cur = ptr;
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            }
+        }
+    }
+    return;
+}
+
+void MoveToICU(List *head, int *space, People *ICU, int capacity)
+{
+    int stop = 0;
+    List *ptr, *cur, *p;
+    List *frt, *bhd;
+
+    ptr = head;
+    cur = head;
+    while (stop < 2 && space > 0) {
+        if (cur->node_kind == 1) {
+            ptr = cur->next;
+            cur = ptr;
+            stop++;
+        } else if (cur->node_kind == 2) {
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            } 
+        } else if (cur->node_kind == 3) {
+            if (cur->people.recovery_time > 28) {
+                // disconnect in row dimension
+                bhd = cur->right;
+                for (p = cur->right; p != cur; p = p->right) {
+                    frt = p;
+                }
+                frt->right = bhd;
+                // disconnect in column dimension
+                bhd = cur->down;
+                for (p = cur->down; p != cur; p = p->down) {
+                    frt = p;
+                }
+                frt->down = bhd;
+                // move to ICU
+                ICU[capacity - *space].name = cur->people.name;
+                ICU[capacity - *space].insert_time = cur->people.insert_time;
+                delete(cur);
+                *space--;
             } 
             ptr = cur->right;
             if (ptr->node_kind == 2) {
