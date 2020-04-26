@@ -10,6 +10,7 @@ class People {
         string name;            // person name
         int recovery_time;      // recovery time
         int insert_time;        // insert time
+        int contagious;         // is this person can infect others
 };
 
 class List {
@@ -35,6 +36,10 @@ class List {
 
 void Connect(List *head, List *ptr);
 void Show(List *head);
+void Infect(List *head);
+void BeContagious(List *head);
+void lengthen_recovery(List *head, int day);
+void BeHealthy(List *head);
 
 int main()
 {
@@ -76,6 +81,8 @@ int main()
     read = 1;
     for (day = 0; day < time_end; day++) {
         // do the function in this day
+        BeContagious(head);
+        Infect(head);
         // insert people in this day
         if (client < head->people_num) {
             do {
@@ -89,6 +96,13 @@ int main()
                     cin >> ptr->row >> ptr->col;
                     cin >> ptr->people.name;
                     cin >> ptr->people.state;
+                    if (ptr->people.state == "Sick") {
+                        ptr->people.recovery_time = 14;
+                        ptr->people.contagious = 1;
+                    } else {
+                        ptr->people.recovery_time = 0;
+                        ptr->people.contagious = 0;
+                    }
                     Connect(head, ptr);
                     client++;
                     read = 1;
@@ -97,10 +111,12 @@ int main()
                 }
             } while (come_day == day && client < head->people_num);
         }
+        // increase the recovery day
+        BeHealthy(head);
+        lengthen_recovery(head, day);
+        cout << "day " << day << "result:" << endl;
+        Show(head);
     }
-
-    // check the linked list
-    Show(head);
 
     return 0;
 }
@@ -186,7 +202,197 @@ void Show(List *head)
             } 
         } else if (cur->node_kind == 3) {
             cout << "element nodes (" << cur->row << ", " << cur->col << "). ";
-            cout << cur->people.name << " " << cur->people.state << endl;
+            cout << cur->people.name << " " << cur->people.state;
+            cout << ". recovery time: " << cur->people.recovery_time;
+            if (cur->people.contagious) cout << " contagious! ";
+            cout << endl;
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                cur = ptr;
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            }
+        }
+    }
+    return;
+}
+
+void Infect(List *head)
+{
+    int stop = 0;
+    List *ptr, *cur, *p;
+
+    ptr = head;
+    cur = head;
+    while (stop < 2) {
+        if (cur->node_kind == 1) {
+            ptr = cur->next;
+            cur = ptr;
+            stop++;
+        } else if (cur->node_kind == 2) {
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            } 
+        } else if (cur->node_kind == 3) {
+            if (cur->people.contagious) {
+                // check the same row
+                for (p = cur->right; p != cur; p = p->right) {
+                    if (p->col == cur->col + 1 || p->col == cur->col - 1) {
+                        if (p->people.state == "Healthy") {
+                            p->people.state = "Sick";
+                            p->people.recovery_time = 14;
+                        }
+                    }
+                }
+                // check the same column
+                for (p = cur->down; p != cur; p = p->down) {
+                    if (p->row == cur->row + 1 || p->row == cur->row - 1) {
+                        if (p->people.state == "Healthy") {
+                            p->people.state = "Sick";
+                            p->people.recovery_time = 14;
+                        }
+                    }
+                }
+                // decrease the recovery time
+                cur->people.recovery_time--;
+            } 
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                cur = ptr;
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            }
+        }
+    }
+    return;
+}
+
+void BeContagious(List *head)
+{
+    int stop = 0;
+    List *ptr, *cur, *p;
+
+    ptr = head;
+    cur = head;
+    while (stop < 2) {
+        if (cur->node_kind == 1) {
+            ptr = cur->next;
+            cur = ptr;
+            stop++;
+        } else if (cur->node_kind == 2) {
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            } 
+        } else if (cur->node_kind == 3) {
+            if (cur->people.state == "Sick") {
+                cur->people.contagious = 1;
+            } 
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                cur = ptr;
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            }
+        }
+    }
+    return;
+}
+
+void lengthen_recovery(List *head, int day)
+{
+    int stop = 0;
+    List *ptr, *cur, *p;
+
+    ptr = head;
+    cur = head;
+    while (stop < 2) {
+        if (cur->node_kind == 1) {
+            ptr = cur->next;
+            cur = ptr;
+            stop++;
+        } else if (cur->node_kind == 2) {
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            } 
+        } else if (cur->node_kind == 3) {
+            if (cur->people.state == "Sick") {
+                // check the same row
+                for (p = cur->right; p != cur; p = p->right) {
+                    if (p->col == cur->col + 1 || p->col == cur->col - 1) {
+                        if (p->people.state == "Sick" && (p->people.contagious == 0 ||
+                            p->people.insert_time == day)) {
+                            cur->people.recovery_time += 7;
+                        }
+                    }
+                }
+                // check the same column
+                for (p = cur->down; p != cur; p = p->down) {
+                    if (p->row == cur->row + 1 || p->row == cur->row - 1) {
+                        if (p->people.state == "Sick" && (p->people.contagious == 0 ||
+                            p->people.insert_time == day)) {
+                            cur->people.recovery_time += 7;
+                        }
+                    }
+                }
+            } 
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                cur = ptr;
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            }
+        }
+    }
+    return;
+}
+
+void BeHealthy(List *head)
+{
+    int stop = 0;
+    List *ptr, *cur, *p;
+
+    ptr = head;
+    cur = head;
+    while (stop < 2) {
+        if (cur->node_kind == 1) {
+            ptr = cur->next;
+            cur = ptr;
+            stop++;
+        } else if (cur->node_kind == 2) {
+            ptr = cur->right;
+            if (ptr->node_kind == 2) {
+                ptr = cur->next;
+                cur = ptr;
+            } else {
+                cur = ptr;
+            } 
+        } else if (cur->node_kind == 3) {
+            if (cur->people.state == "Sick") {
+                if (cur->people.recovery_time == 0) {
+                    cur->people.state = "Healthy";
+                    cur->people.contagious = 0;
+                }
+            } 
             ptr = cur->right;
             if (ptr->node_kind == 2) {
                 cur = ptr;
